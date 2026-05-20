@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.diajarkoding.pomodoroforest.presentation.screen.FocusTimerScreen
 import com.diajarkoding.pomodoroforest.presentation.screen.SplashScreen
 import com.diajarkoding.pomodoroforest.presentation.state.FocusTimerUiState
@@ -30,6 +31,11 @@ class MainActivity : ComponentActivity() {
     private val viewModel: FocusTimerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Pasang system splash sebelum super.onCreate agar Android 12+ pakai
+        // splash bawaan (background ForestGreen + logo aplikasi) selama
+        // proses startup, lalu transisi mulus ke in-app splash.
+        installSplashScreen()
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
