@@ -5,4 +5,5 @@ enum class TimerStatus {
     Running,
     Paused,
     Finished,
+    Cancelled,
 }
