@@ -39,12 +39,14 @@ fun FocusTimerScreen(
         TimerStatus.Running -> "Give Up"
         TimerStatus.Paused -> "Resume"
         TimerStatus.Finished -> "Plant Again"
+        TimerStatus.Cancelled -> "Try Again"
     }
     val motivationText = when (uiState.status) {
         TimerStatus.Idle -> "Start planting today!"
         TimerStatus.Running -> "Put down your phone."
         TimerStatus.Paused -> "Take a breath, then continue."
         TimerStatus.Finished -> "Your tree has grown!"
+        TimerStatus.Cancelled -> "Your tree stopped growing."
     }
 
     Surface(
@@ -145,6 +147,20 @@ private fun FocusTimerScreenFinishedPreview() {
                 remainingSeconds = 0,
                 status = TimerStatus.Finished,
                 treeStage = TreeStage.FullTree,
+            ),
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FocusTimerScreenCancelledPreview() {
+    FocusTimerTheme {
+        FocusTimerScreen(
+            uiState = FocusTimerUiState(
+                remainingSeconds = 25 * 60,
+                status = TimerStatus.Cancelled,
+                treeStage = TreeStage.Seed,
             ),
         )
     }
