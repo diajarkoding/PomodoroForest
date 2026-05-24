@@ -10,10 +10,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.diajarkoding.pomodoroforest.domain.logic.TimerCalculator
 import com.diajarkoding.pomodoroforest.domain.model.TimerStatus
+import com.diajarkoding.pomodoroforest.domain.model.TreeStage
 import com.diajarkoding.pomodoroforest.presentation.component.FocusTopBar
 import com.diajarkoding.pomodoroforest.presentation.component.MotivationText
 import com.diajarkoding.pomodoroforest.presentation.component.TimerActionButton
@@ -22,39 +27,48 @@ import com.diajarkoding.pomodoroforest.presentation.component.TreeIllustration
 import com.diajarkoding.pomodoroforest.presentation.state.FocusTimerUiState
 import com.diajarkoding.pomodoroforest.presentation.theme.FocusSpace
 import com.diajarkoding.pomodoroforest.presentation.theme.FocusTimerTheme
-import androidx.compose.ui.tooling.preview.Preview
-import com.diajarkoding.pomodoroforest.domain.model.TreeStage
+import com.diajarkoding.pomodoroforest.presentation.viewmodel.FocusTimerViewModel
+
+/**
+ * Stateful entry point untuk timer screen.
+ *
+ * Route bertugas menyambungkan ViewModel dengan FocusTimerScreen yang stateless.
+ * Tetap pisahkan Route (stateful) dan Screen (stateless) supaya Screen mudah
+ * dipreview dengan dummy state tanpa perlu inisialisasi ViewModel.
+ */
+@Composable
+fun FocusTimerRoute(
+    modifier: Modifier = Modifier,
+    viewModel: FocusTimerViewModel = viewModel(),
+    onMenuClick: () -> Unit = {},
+    onSoundClick: () -> Unit = {},
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    FocusTimerScreen(
+        uiState = uiState,
+        onPrimaryActionClick = viewModel::handlePrimaryAction,
+        onMenuClick = onMenuClick,
+        onSoundClick = onSoundClick,
+        modifier = modifier,
+    )
+}
 
 @Composable
 fun FocusTimerScreen(
-    uiState: FocusTimerUiState = FocusTimerUiState(),
-    onPrimaryActionClick: () -> Unit = {},
+    uiState: FocusTimerUiState,
+    onPrimaryActionClick: () -> Unit,
     onMenuClick: () -> Unit = {},
     onSoundClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val isRunning = uiState.status == TimerStatus.Running
-    val buttonText = when (uiState.status) {
-        TimerStatus.Idle -> "Plant"
-        TimerStatus.Running -> "Give Up"
-        TimerStatus.Paused -> "Resume"
-        TimerStatus.Finished -> "Plant Again"
-        TimerStatus.Cancelled -> "Try Again"
-    }
-    val motivationText = when (uiState.status) {
-        TimerStatus.Idle -> "Start planting today!"
-        TimerStatus.Running -> "Put down your phone."
-        TimerStatus.Paused -> "Take a breath, then continue."
-        TimerStatus.Finished -> "Your tree has grown!"
-        TimerStatus.Cancelled -> "Your tree stopped growing."
-    }
-
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.primary,
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
                 .padding(FocusSpace.large),
         ) {
             FocusTopBar(
@@ -63,13 +77,13 @@ fun FocusTimerScreen(
                 modifier = Modifier.align(Alignment.TopCenter),
             )
             FocusTimerMainContent(
-                motivationText = motivationText,
+                motivationText = uiState.motivationText,
                 treeStage = uiState.treeStage,
                 timerText = TimerCalculator.formatTime(uiState.remainingSeconds),
-                buttonText = buttonText,
-                isRunning = isRunning,
+                buttonText = uiState.primaryButtonText,
+                isPrimaryButton = uiState.isPrimaryButton,
                 onPrimaryActionClick = onPrimaryActionClick,
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier.align(Alignment.Center),
             )
         }
     }
@@ -81,7 +95,7 @@ private fun FocusTimerMainContent(
     treeStage: TreeStage,
     timerText: String,
     buttonText: String,
-    isRunning: Boolean,
+    isPrimaryButton: Boolean,
     onPrimaryActionClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -104,7 +118,7 @@ private fun FocusTimerMainContent(
 
         TimerActionButton(
             text = buttonText,
-            isPrimary = !isRunning,
+            isPrimary = isPrimaryButton,
             onClick = onPrimaryActionClick,
         )
     }
@@ -119,7 +133,11 @@ private fun FocusTimerScreenIdlePreview() {
                 remainingSeconds = 25 * 60,
                 status = TimerStatus.Idle,
                 treeStage = TreeStage.Seed,
+                motivationText = "Start planting today!",
+                primaryButtonText = "Plant",
+                isPrimaryButton = true,
             ),
+            onPrimaryActionClick = {},
         )
     }
 }
@@ -133,7 +151,12 @@ private fun FocusTimerScreenRunningPreview() {
                 remainingSeconds = 18 * 60 + 42,
                 status = TimerStatus.Running,
                 treeStage = TreeStage.Sprout,
+                progress = 0.25f,
+                motivationText = "Put down your phone.",
+                primaryButtonText = "Give Up",
+                isPrimaryButton = false,
             ),
+            onPrimaryActionClick = {},
         )
     }
 }
@@ -147,7 +170,12 @@ private fun FocusTimerScreenFinishedPreview() {
                 remainingSeconds = 0,
                 status = TimerStatus.Finished,
                 treeStage = TreeStage.FullTree,
+                progress = 1f,
+                motivationText = "Your tree has grown!",
+                primaryButtonText = "Plant Again",
+                isPrimaryButton = true,
             ),
+            onPrimaryActionClick = {},
         )
     }
 }
@@ -161,7 +189,11 @@ private fun FocusTimerScreenCancelledPreview() {
                 remainingSeconds = 25 * 60,
                 status = TimerStatus.Cancelled,
                 treeStage = TreeStage.Seed,
+                motivationText = "Your tree stopped growing.",
+                primaryButtonText = "Try Again",
+                isPrimaryButton = true,
             ),
+            onPrimaryActionClick = {},
         )
     }
 }
